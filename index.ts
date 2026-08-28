@@ -61,25 +61,28 @@ function normalizeParams(raw: RawKoyebParams): KoyebParams {
 
 		for (let i = 0; i < rawArgs.length; i++) {
 			const token = rawArgs[i];
-			if (token.startsWith("--")) {
+			if (token.startsWith("-")) {
 				let name: string;
 				let value: string | undefined;
 
 				const eq = token.indexOf("=");
 				if (eq >= 0) {
-					name = token.slice(2, eq);
+					name = token.replace(/^-+/, "");
 					value = token.slice(eq + 1);
 				} else {
-					name = token.slice(2);
-					if (i + 1 < rawArgs.length && !rawArgs[i + 1].startsWith("--")) {
+					name = token.replace(/^-+/, "");
+					if (i + 1 < rawArgs.length && !rawArgs[i + 1].startsWith("-")) {
 						value = rawArgs[++i];
 					}
 				}
 
-				if (PROMOTABLE_FLAGS.has(name)) {
-					if (name === "output" && output === undefined && value !== undefined) {
+				if (name === "o" || name === "output") {
+					if (output === undefined && value !== undefined) {
 						output = value;
-					} else if (name === "organization" && organization === undefined && value !== undefined) {
+					}
+					// If top-level is already set, the parsed duplicate is dropped.
+				} else if (name === "organization" || name === "org") {
+					if (organization === undefined && value !== undefined) {
 						organization = value;
 					}
 					// If top-level is already set, the parsed duplicate is dropped.
