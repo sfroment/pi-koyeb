@@ -40,9 +40,6 @@ export type RawKoyebParams = Omit<KoyebParams, "subcommand" | "args"> & {
 	args?: KoyebParams["args"] | string[];
 };
 
-/** Flags in array-args that promote to typed top-level fields when unset. */
-const PROMOTABLE_FLAGS = new Set(["output", "organization"]);
-
 /**
  * Normalize raw tool params into canonical KoyebParams. Tolerates two mis-shaped
  * calls the model produces: args as a JSON array (mode #1) and known top-level
@@ -67,7 +64,7 @@ function normalizeParams(raw: RawKoyebParams): KoyebParams {
 
 				const eq = token.indexOf("=");
 				if (eq >= 0) {
-					name = token.replace(/^-+/, "");
+					name = token.slice(0, eq).replace(/^-+/, "");
 					value = token.slice(eq + 1);
 				} else {
 					name = token.replace(/^-+/, "");
