@@ -405,11 +405,9 @@ export default function koyebExtension(pi: ExtensionAPI) {
 			"If the tool reports you are not authenticated, tell the user to run `koyeb login`.",
 		],
 		parameters: Type.Object({
-			subcommand: Type.Optional(
-				Type.String({
-					description: KOYEB_SUBCOMMAND_DESCRIPTION,
-				}),
-			),
+			subcommand: Type.String({
+				description: KOYEB_SUBCOMMAND_DESCRIPTION,
+			}),
 			args: Type.Optional(
 				Type.Union([
 					Type.Record(
