@@ -538,3 +538,47 @@ describe("integration (real koyeb)", () => {
 		expect(res).toBeDefined();
 	});
 });
+
+describe("runKoyeb error truncation", () => {
+	// A fake 60-line CLI usage dump — the diagnostic lives in the first lines.
+	const usageDump = [
+		"unknown flag: --q",
+		"",
+		"Usage:",
+		"  koyeb apps list [flags]",
+		...Array.from({ length: 55 }, (_, i) => `  --flag${i}   description of flag ${i}`),
+	].join("\n");
+
+	test("1. non-zero exit keeps the diagnostic head and drops deep usage lines", async () => {
+		const exec = makeFakeExec({ stdout: "", stderr: usageDump, code: 1 });
+		const res = await runKoyeb({ subcommand: "apps list" }, exec);
+		const text = res.content[0].text;
+		expect(text).toContain("unknown flag: --q");
+		expect(text).not.toContain("--flag30");
+		expect(text).not.toContain("--flag40");
+	});
+
+	test("2. truncated error output points to --help instead of dumping usage", async () => {
+		const exec = makeFakeExec({ stdout: "", stderr: usageDump, code: 1 });
+		const res = await runKoyeb({ subcommand: "apps list" }, exec);
+		expect(res.content[0].text).toContain("--help");
+	});
+
+	test("3. short errors pass through untouched, no truncation notice", async () => {
+		const exec = makeFakeExec({ stdout: "", stderr: "not found", code: 1 });
+		const res = await runKoyeb({ subcommand: "apps list" }, exec);
+		const text = res.content[0].text;
+		expect(text).toContain("not found");
+		expect(text).not.toContain("--help");
+		expect(text).not.toContain("truncated");
+	});
+
+	test("4. success path keeps the generous default tail truncation", async () => {
+		const big = Array.from({ length: 3000 }, (_, i) => `line-${i}`).join("\n");
+		const exec = makeFakeExec({ stdout: big, code: 0 });
+		const res = await runKoyeb({ subcommand: "apps list" }, exec);
+		const text = res.content[0].text;
+		expect(text).toContain("line-2999");
+		expect(text).toContain("Output truncated");
+	});
+});
